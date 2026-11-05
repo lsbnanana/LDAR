@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>도로명주소 검색 · HAPs 신고 도우미</title>
+<style>
+  html,body{margin:0;height:100%;font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:#F3F6FB;color:#0F1E3D}
+  .bar{padding:10px 14px;background:#1C60EF;color:#fff;font-weight:700;font-size:15px}
+  .bar small{display:block;font-weight:400;font-size:12px;opacity:.9}
+  #box{position:absolute;top:58px;left:0;right:0;bottom:0}
+  #done{display:none;padding:24px;line-height:1.6}
+  #done b{display:block;font-size:17px;margin-bottom:6px}
+  button{font:inherit;border:0;border-radius:8px;padding:8px 14px;background:#1C60EF;color:#fff;font-weight:700;cursor:pointer;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="bar">도로명주소 검색<small>도로명·건물명·지번으로 검색하고 결과를 누르세요. 신고 도우미에 자동으로 입력됩니다.</small></div>
+<div id="box"></div>
+<div id="done"></div>
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+/* 신고 도우미(PC에서 연 파일)는 출처가 'null'이라 카카오 검색 결과를 직접 받지 못함.
+   이 페이지(https)가 대신 검색하고, 고른 주소를 연 창(window.opener)에 보냄. */
+(function(){
+  var box=document.getElementById('box'),done=document.getElementById('done');
+  function finish(d){
+    var a={zonecode:d.zonecode,roadAddress:d.roadAddress,autoRoadAddress:d.autoRoadAddress,address:d.address,
+           jibunAddress:d.jibunAddress,autoJibunAddress:d.autoJibunAddress,bname:d.bname,buildingName:d.buildingName,apartment:d.apartment};
+    var sent=false;
+    try{if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'haps-addr',d:a},'*');sent=true;}}catch(e){}
+    box.style.display='none';done.style.display='block';
+    var road=a.roadAddress||a.autoRoadAddress||a.address;
+    done.innerHTML=sent?'<b>주소를 보냈습니다</b>'+road+'<br>이 창은 곧 닫힙니다.'
+      :'<b>신고 도우미 창을 찾지 못했습니다</b>['+a.zonecode+'] '+road+'<br>아래 버튼으로 복사해 도우미의 「찾은 주소 붙여넣기」에 붙여 넣으세요.<br><button id="cp">주소 복사</button>';
+    if(sent)setTimeout(function(){window.close();},700);
+    else document.getElementById('cp').onclick=function(){var t='['+a.zonecode+'] '+road;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).catch(function(){prompt('복사하세요',t);});};
+  }
+  if(!window.daum||!daum.Postcode){box.innerHTML='<p style="padding:20px">카카오 주소 검색을 불러오지 못했습니다. 인터넷 연결을 확인하세요.</p>';return;}
+  new daum.Postcode({width:'100%',height:'100%',oncomplete:finish}).embed(box,{autoClose:false});
+})();
+</script>
+</body>
+</html>
